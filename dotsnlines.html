@@ -14,23 +14,24 @@ var verticalLines;
 var startX = 100;
 var startY = 100;
 var boxWidth = 100;
+var turn = "HUMAN";
 
 window.addEventListener("load",function() {
 	canvas = document.getElementById("game-stage");
 	ctx = canvas.getContext("2d");
 	canvas.addEventListener("click",executeMouseClick,false);
 	canvas.addEventListener("mousemove",executeMouseover,false);
-	buildStage();	
+	buildStage();
 },false);
 
 function executeMouseover(ev){
 var x, y;
-	if (ev.layerX || ev.layerX == 0) 
+	if (ev.layerX || ev.layerX == 0)
 	{ // Firefox
 		x = ev.layerX;
 		y = ev.layerY;
-	} 
-	else if (ev.offsetX || ev.offsetX == 0) 
+	}
+	else if (ev.offsetX || ev.offsetX == 0)
 	{ // Opera
 		x = ev.offsetX;
 		y = ev.offsetY;
@@ -44,13 +45,13 @@ var x, y;
 		{
 			document.body.style.cursor  = 'pointer';
 			return;
-		}	
+		}
 		else
 		{
-			document.body.style.cursor = 'default';			
+			document.body.style.cursor = 'default';
 		}
 	}
-	
+
 	for(idx in verticalLines)
 	{
 		dx = verticalLines[idx].xPos;
@@ -69,17 +70,17 @@ var x, y;
 
 function executeMouseClick(ev){
 	var x, y;
-	if (ev.layerX || ev.layerX == 0) 
+	if (ev.layerX || ev.layerX == 0)
 	{ // Firefox
 		x = ev.layerX;
 		y = ev.layerY;
-	} 
-	else if (ev.offsetX || ev.offsetX == 0) 
+	}
+	else if (ev.offsetX || ev.offsetX == 0)
 	{ // Opera
 		x = ev.offsetX;
 		y = ev.offsetY;
 	}
-	
+
 	document.getElementById("pos").innerHTML = "Position clicked: "+x+","+y;
 	var lineClicked = getClickedLine(x,y);
 	if(lineClicked!=null && lineClicked.state!="CHECKED")
@@ -93,13 +94,16 @@ function executeMouseClick(ev){
 		{
 			lineClicked.image.src = "grayhlinetaken.png";
 		}
-		
-		ctx.drawImage(lineClicked.image,lineClicked.xPos,lineClicked.yPos);	
+
+		ctx.drawImage(lineClicked.image,lineClicked.xPos,lineClicked.yPos);
+		turn ="MACHINE";
 	}
+
+	
 }
 
 function getClickedLine(x,y){
-	
+
 	//may need parent condition to limit the iteration.
 	for(idx = 0;idx<horizontalLines.length;idx++)
 	{
@@ -108,16 +112,16 @@ function getClickedLine(x,y){
 		if((x>(dx+10) && x<(dx+90)) && (y>dy && y<(dy+20)))
 		{
 			return horizontalLines[idx];
-		}	
+		}
 	}
-	
+
 	for(idx in verticalLines){
 		dx = verticalLines[idx].xPos;
 		dy = verticalLines[idx].yPos;
 		if((x>dx && x<dx+20) && (y>dy+10 && y<dy+90))
 		{
 			return verticalLines[idx];
-		}	
+		}
 	}
 	return null;
 }
@@ -136,7 +140,7 @@ function buildStage(){
 		newLine.image.src ="grayhline.png";
 		horizontalLines.push(newLine);
 	}
-	
+
 	//creating lines vertical
 	verticalLines = new Array();
 	for(i=0;i<(hr*vt+vt);i++)
@@ -148,8 +152,8 @@ function buildStage(){
 		newLine.image = new Image();
 		newLine.image.src ="grayvline.png";
 		verticalLines.push(newLine);
-	}	
-	
+	}
+
 	//creating boxes
 	boxes = new Array(hr*vt);
 	var k=0;
@@ -165,14 +169,14 @@ function buildStage(){
 			newBox.leftLine = verticalLines[j+k];
 			newBox.rightLine = verticalLines[j+k+1];
 			newBox.draw_box();
-			boxes[k] = newBox;	
+			boxes[k] = newBox;
 			k++;
 		}
 	}
 }
 
 function drawBox(){
-	
+
 	ctx.beginPath();
 	dx = startX + this.col*100;
 	dy = startY + this.row*100;
@@ -204,7 +208,7 @@ function drawBox(){
 		this.rightLine.yPos = dy;
 		this.rightLine.state="DRAWN";
 	}
-	ctx.closePath();	
+	ctx.closePath();
 }
 
 function Line(){
@@ -230,8 +234,10 @@ function Box(){
 </script>
 </head>
 <body>
-<section>
 <canvas id="game-stage" width="900" height="900"><p>Your browser doesn't support canvas.</p></canvas>
-<label id="pos" style=" margin-top: 300px; position: absolute; width: 300px;" > Mouse Position</label>
-</section>
+<div style="width:30;position: absolute;">
+<label id="pos" style="width: 300px;" > Mouse Position</label>
+Player 1:<input type="text" style="width:200;" />
+Player 2:<label style="width:30;position: absolute;" >Computer</label>
+</div>
 </body>
