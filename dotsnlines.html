@@ -15,6 +15,8 @@ var startX = 100;
 var startY = 100;
 var boxWidth = 100;
 var turn = "HUMAN";
+var humanScore = 0;
+var machineScore = 0;
 
 window.addEventListener("load",function() {
 	canvas = document.getElementById("game-stage");
@@ -67,39 +69,263 @@ var x, y;
 		}
 	}
 }
-
+function executeMouseClickDisable(){}
 function executeMouseClick(ev){
-	var x, y;
-	if (ev.layerX || ev.layerX == 0)
-	{ // Firefox
-		x = ev.layerX;
-		y = ev.layerY;
-	}
-	else if (ev.offsetX || ev.offsetX == 0)
-	{ // Opera
-		x = ev.offsetX;
-		y = ev.offsetY;
-	}
+	if(turn == "HUMAN")
+	{	
+		var x, y;
+		if (ev.layerX || ev.layerX == 0)
+		{ // Firefox
+			x = ev.layerX;
+			y = ev.layerY;
+		}
+		else if (ev.offsetX || ev.offsetX == 0)
+		{ // Opera
+			x = ev.offsetX;
+			y = ev.offsetY;
+		}
 
-	document.getElementById("pos").innerHTML = "Position clicked: "+x+","+y;
-	var lineClicked = getClickedLine(x,y);
-	if(lineClicked!=null && lineClicked.state!="CHECKED")
-	{
-		lineClicked.state = "CHECKED";
-		if(lineClicked.orient == "V")
+		document.getElementById("pos").innerHTML = "Position clicked: "+x+","+y;
+		
+	
+		
+		var lineClicked = getClickedLine(x,y);
+		if(lineClicked!=null && lineClicked.state!="CHECKED")
 		{
-			lineClicked.image.src = "grayvlinetaken.png";
+		lineClicked.image.onload = function(){
+				ctx.drawImage(lineClicked.image,lineClicked.xPos,lineClicked.yPos);
+			}
+			lineClicked.state = "CHECKED";
+			if(lineClicked.orient == "V")
+			{
+				lineClicked.image.src = "grayvlinetaken.png";
+			}
+			else
+			{
+				lineClicked.image.src = "grayhlinetaken.png";
+			}
+			
+			
+			
+			//againMyTurn?
+					
+			var associatedBoxes = getAssociatedBoxes(lineClicked);
+			if(associatedBoxes.length>0){
+				for(idx in associatedBoxes){
+					if(associatedBoxes[idx].owner == "" && getUncheckLinesInBox(associatedBoxes[idx]).length == 0)
+					{
+						associatedBoxes[idx].owner ="HUMAN";
+						humanScore++;
+						associatedBoxes[idx].image.src = "human.jpg";			
+						ctx.drawImage(associatedBoxes[idx].image,(startX + associatedBoxes[idx].col*100+25),(startY + associatedBoxes[idx].row*100+25));
+						canvas.addEventListener("click",executeMouseClick,false);	
+						turn="HUMAN";
+						return;
+					}
+				}				
+			}
+			document.getElementById("turn").innerHTML = "Turn: Machine";	
+			turn ="MACHINE";			
 		}
 		else
 		{
-			lineClicked.image.src = "grayhlinetaken.png";
+			return;
 		}
+		
+		if(turn == "MACHINE"){
+			setTimeout("machineTurn()", 500);
+			canvas.removeEventListener("click",executeMouseClick,false);
+			turn = "HUMAN";
+		}
+	}		
+}
 
-		ctx.drawImage(lineClicked.image,lineClicked.xPos,lineClicked.yPos);
-		turn ="MACHINE";
+function getAssociatedBoxes(mLine){ //this can be improved
+	var associatedBoxes = new Array();
+	for(i=0;i<boxes.length;i++){
+		if(mLine.orient=="V")
+		{
+			if(boxes[i].leftLine.name == mLine.name)
+			{
+				associatedBoxes.push(boxes[i]);
+			}
+			else if(boxes[i].rightLine.name == mLine.name)
+			{
+				associatedBoxes.push(boxes[i]);
+			}			
+		}
+		else
+		{
+			if(boxes[i].topLine.name == mLine.name)
+			{
+				associatedBoxes.push(boxes[i]);
+			}
+			else if(boxes[i].bottomLine.name == mLine.name)
+			{
+				associatedBoxes.push(boxes[i]);
+			}
+		}
+		if(associatedBoxes.length==2) //two boxes max
+			break;	
 	}
+	return associatedBoxes;
+}
 
+function checkIfOver(){
+	for(idx in boxes)
+	{
+		if(boxes[idx].owner == "")
+			return true;
+	}
+	if(humanScore>machineScore)
+	{
+		alert("You the Human OWN!!\n Human: "+humanScore+"\nMachine: "+machineScore);
+		return;
+	}
+	else if(humanScore<machineScore)
+	{
+		alert("Sorry the Machine OWN!!\n Human: "+humanScore+"\nMachine: "+machineScore);
+		return;
+	}
+	else
+	{
+		alert("DRAW!!\n Human: "+humanScore+"\nMachine: "+machineScore);
+		return;
+	}	
+}
+
+function getUncheckLinesInBox(mbox){
+	var uncheckLines = new Array();
+	if(mbox.topLine.state == "DRAWN")
+		uncheckLines.push(mbox.topLine);
+	if(mbox.bottomLine.state == "DRAWN")
+		uncheckLines.push(mbox.bottomLine);
+	if(mbox.leftLine.state == "DRAWN")
+		uncheckLines.push(mbox.leftLine);
+	if(mbox.rightLine.state == "DRAWN")
+		uncheckLines.push(mbox.rightLine);
+	return uncheckLines;
+}
+var againMachine = false;	
+function machineTurn(){
 	
+	checkIfOver();
+	
+	for(index in boxes){
+		var uncheckLines = getUncheckLinesInBox(boxes[index]);
+		if(uncheckLines.length==1)
+		{
+			uncheckLines[0].image.onload = function(){
+				ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+			}
+			uncheckLines[0].state = "CHECKED";
+			if(uncheckLines[0].orient == "V")
+			{
+				uncheckLines[0].image.src = "grayvlinetakenr.png";
+			}
+			else
+			{
+				uncheckLines[0].image.src = "grayhlinetakenr.png";
+			}
+			
+			var associatedBoxes = getAssociatedBoxes(uncheckLines[0]);
+			if(associatedBoxes.length>0){
+				for(idx in associatedBoxes){
+					if(associatedBoxes[idx].owner == "" && getUncheckLinesInBox(associatedBoxes[idx]).length == 0)
+					{
+						associatedBoxes[idx].owner ="MACHINE";
+						machineScore++;
+						associatedBoxes[idx].image.src = "machine.jpg";			
+						ctx.drawImage(associatedBoxes[idx].image,(startX + associatedBoxes[idx].col*100+30),(startY + associatedBoxes[idx].row*100+30));	
+					}
+				}				
+			}
+			againMachine = true;
+			break;
+		}
+		else
+		{
+			againMachine = false;			
+		}		
+	}
+	if(againMachine == true)
+	{
+		setTimeout("machineTurn()", 500);		
+		return;
+	}
+	else
+	{
+	//first check line with threeunchecklineBox
+	//else check line with fourunchecklineBox
+	//else check line with 2 checklineBox -- be smart atleast here.
+	//var bWith3Unchecked = 0;
+	//var bWith4Unchecked = 0;
+	//var bWith2Unchecked = 0;
+		for(indx in boxes){
+			
+			var uncheckLines = getUncheckLinesInBox(boxes[indx]);
+			if(uncheckLines.length==3)
+			{
+				uncheckLines[0].image.onload = function() {
+					ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+				}
+				uncheckLines[0].state = "CHECKED";
+				if(uncheckLines[0].orient == "V")
+				{
+					uncheckLines[0].image.src = "grayvlinetakenr.png";
+				}
+				else
+				{
+					uncheckLines[0].image.src = "grayhlinetakenr.png";
+				}
+				
+				document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+				canvas.addEventListener("click",executeMouseClick,false);			
+				return;
+			}			
+			
+		}
+		for(indx in boxes){
+			var uncheckLines = getUncheckLinesInBox(boxes[indx]);
+			if(uncheckLines.length==4){
+				uncheckLines[0].image.onload = function() {
+					ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+				}
+				uncheckLines[0].state = "CHECKED";
+				if(uncheckLines[0].orient == "V")
+				{
+					uncheckLines[0].image.src = "grayvlinetakenr.png";
+				}
+				else
+				{
+					uncheckLines[0].image.src = "grayhlinetakenr.png";
+				}
+				document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+				canvas.addEventListener("click",executeMouseClick,false);			
+				return;	
+			}			
+		}	
+		for(indx in boxes){
+			var uncheckLines = getUncheckLinesInBox(boxes[indx]);
+			if(uncheckLines.length==2){
+				uncheckLines[0].image.onload = function() {
+					ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+				}
+				uncheckLines[0].state = "CHECKED";
+				if(uncheckLines[0].orient == "V")
+				{
+					uncheckLines[0].image.src = "grayvlinetakenr.png";
+				}
+				else
+				{
+					uncheckLines[0].image.src = "grayhlinetakenr.png";
+				}
+				document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+				canvas.addEventListener("click",executeMouseClick,false);			
+				return;	
+			}			
+		}		
+	}
 }
 
 function getClickedLine(x,y){
@@ -169,6 +395,8 @@ function buildStage(){
 			newBox.leftLine = verticalLines[j+k];
 			newBox.rightLine = verticalLines[j+k+1];
 			newBox.draw_box();
+			newBox.owner = "";
+			newBox.image = new Image();			
 			boxes[k] = newBox;
 			k++;
 		}
@@ -180,6 +408,7 @@ function drawBox(){
 	ctx.beginPath();
 	dx = startX + this.col*100;
 	dy = startY + this.row*100;
+
 	if(this.topLine.state!="DRAWN")
 	{
 		ctx.drawImage(this.topLine.image,dx+5,dy)
@@ -212,7 +441,7 @@ function drawBox(){
 }
 
 function Line(){
-	this.name;
+	this.name="";
 	this.xPos="";
 	this.yPos="";
 	this.orient;
@@ -227,17 +456,25 @@ function Box(){
 	this.bottomLine;
 	this.leftLine;
 	this.rightLine;
-	this.owner;
+	this.owner=="";
+	this.image;
 	this.draw_box=drawBox;
+	
 }
 
 </script>
 </head>
 <body>
+<div>
 <canvas id="game-stage" width="900" height="900"><p>Your browser doesn't support canvas.</p></canvas>
-<div style="width:30;position: absolute;">
-<label id="pos" style="width: 300px;" > Mouse Position</label>
-Player 1:<input type="text" style="width:200;" />
-Player 2:<label style="width:30;position: absolute;" >Computer</label>
+<div style="width:200;position: relative; float:right; Margin-Top:200">
+<label id="pos" style="width: 10px;" > Mouse Position</label>
+<br />
+<br />
+Player 1:<input id="player1" type="text" value="Human"  />   <br/>
+Player 2:<label style="width:30;" >   Machine</label><br/><br/><br/><br/><br/>
+<label id="turn">Turn: Human first</label>
+</div>
+
 </div>
 </body>
