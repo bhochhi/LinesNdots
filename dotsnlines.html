@@ -27,6 +27,7 @@ window.addEventListener("load",function() {
 },false);
 
 function executeMouseover(ev){
+
 var x, y;
 	if (ev.layerX || ev.layerX == 0)
 	{ // Firefox
@@ -69,7 +70,7 @@ var x, y;
 		}
 	}
 }
-function executeMouseClickDisable(){}
+
 function executeMouseClick(ev){
 	if(turn == "HUMAN")
 	{	
@@ -92,7 +93,7 @@ function executeMouseClick(ev){
 		var lineClicked = getClickedLine(x,y);
 		if(lineClicked!=null && lineClicked.state!="CHECKED")
 		{
-		lineClicked.image.onload = function(){
+			lineClicked.image.onload = function(){
 				ctx.drawImage(lineClicked.image,lineClicked.xPos,lineClicked.yPos);
 			}
 			lineClicked.state = "CHECKED";
@@ -105,10 +106,6 @@ function executeMouseClick(ev){
 				lineClicked.image.src = "grayhlinetaken.png";
 			}
 			
-			
-			
-			//againMyTurn?
-					
 			var associatedBoxes = getAssociatedBoxes(lineClicked);
 			if(associatedBoxes.length>0){
 				for(idx in associatedBoxes){
@@ -206,16 +203,93 @@ function getUncheckLinesInBox(mbox){
 		uncheckLines.push(mbox.rightLine);
 	return uncheckLines;
 }
-var againMachine = false;	
+
+
 function machineTurn(){
-	
 	checkIfOver();
-	
+	var boxWith1Unchecked = new Array();
+	var boxWith2Unchecked = new Array();
+	var boxWith3Unchecked = new Array();
+	var boxWith4Unchecked = new Array();
 	for(index in boxes){
-		var uncheckLines = getUncheckLinesInBox(boxes[index]);
-		if(uncheckLines.length==1)
+		var uLines = getUncheckLinesInBox(boxes[index]);
+		if(uLines.length == 1)
+			boxWith1Unchecked.push(boxes[index]);
+		else if(uLines.length == 2)
+			boxWith2Unchecked.push(boxes[index]);
+		else if(uLines.length == 3)
+			boxWith3Unchecked.push(boxes[index]);
+		else if(uLines.length == 4)
+			boxWith4Unchecked.push(boxes[index]);
+	}
+	var boxWith3UnchecksNotSafe = false;
+	if(boxWith1Unchecked.length>0)
+	{		
+		var uncheckLines = getUncheckLinesInBox(boxWith1Unchecked[0]);
+		uncheckLines[0].image.onload = function(){
+			ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+		}
+		uncheckLines[0].state = "CHECKED";
+		if(uncheckLines[0].orient == "V")
 		{
-			uncheckLines[0].image.onload = function(){
+			uncheckLines[0].image.src = "grayvlinetakenr.png";
+		}
+		else
+		{
+			uncheckLines[0].image.src = "grayhlinetakenr.png";
+		}
+		var associatedBoxes = getAssociatedBoxes(uncheckLines[0]);
+		if(associatedBoxes.length>0){
+			for(idx in associatedBoxes){
+				if(associatedBoxes[idx].owner == "" && getUncheckLinesInBox(associatedBoxes[idx]).length == 0)
+				{
+					associatedBoxes[idx].owner ="MACHINE";
+					machineScore++;
+					associatedBoxes[idx].image.src = "machine.jpg";			
+					ctx.drawImage(associatedBoxes[idx].image,(startX + associatedBoxes[idx].col*100+30),(startY + associatedBoxes[idx].row*100+30));	
+				}
+			}				
+		}
+		setTimeout("machineTurn()", 500);		
+		return;
+	}
+	else if(boxWith3Unchecked.length > 0){
+		for(i = 0; i<boxWith3Unchecked.length;i++)
+		{
+			var uncheckLines = getUncheckLinesInBox(boxWith3Unchecked[i]);
+			for(lin = 0;lin<uncheckLines.length;lin++)
+			{
+				if(isSafeToCheck(uncheckLines[lin])==true)
+				{
+					uncheckLines[lin].image.onload = function() {
+						ctx.drawImage(uncheckLines[lin].image,uncheckLines[lin].xPos,uncheckLines[lin].yPos);
+					}
+					uncheckLines[lin].state = "CHECKED";
+					if(uncheckLines[lin].orient == "V")
+					{
+						uncheckLines[lin].image.src = "grayvlinetakenr.png";
+					}
+					else
+					{
+						uncheckLines[lin].image.src = "grayhlinetakenr.png";
+					}
+					document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+					canvas.addEventListener("click",executeMouseClick,false);	
+					boxWith3UnchecksNotSafe = false;					
+					return;
+				}
+				else
+				{
+					boxWith3UnchecksNotSafe = true;
+					continue;
+				}
+			}
+		}
+		if(boxWith3UnchecksNotSafe == true && boxWith4Unchecked.length == 0)
+		{
+			// check that has less harm. improve latter.
+			var uncheckLines = getUncheckLinesInBox(boxWith3Unchecked[0]);
+			uncheckLines[0].image.onload = function() {
 				ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
 			}
 			uncheckLines[0].state = "CHECKED";
@@ -227,106 +301,58 @@ function machineTurn(){
 			{
 				uncheckLines[0].image.src = "grayhlinetakenr.png";
 			}
-			
-			var associatedBoxes = getAssociatedBoxes(uncheckLines[0]);
-			if(associatedBoxes.length>0){
-				for(idx in associatedBoxes){
-					if(associatedBoxes[idx].owner == "" && getUncheckLinesInBox(associatedBoxes[idx]).length == 0)
-					{
-						associatedBoxes[idx].owner ="MACHINE";
-						machineScore++;
-						associatedBoxes[idx].image.src = "machine.jpg";			
-						ctx.drawImage(associatedBoxes[idx].image,(startX + associatedBoxes[idx].col*100+30),(startY + associatedBoxes[idx].row*100+30));	
-					}
-				}				
-			}
-			againMachine = true;
-			break;
+			document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+			canvas.addEventListener("click",executeMouseClick,false);			
+			return;						
+		}
+	}
+	else if(boxWith4Unchecked.length > 0){
+		var uncheckLines = getUncheckLinesInBox(boxWith4Unchecked[0]);
+		uncheckLines[0].image.onload = function() {
+			ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+		}
+		uncheckLines[0].state = "CHECKED";
+		if(uncheckLines[0].orient == "V")
+		{
+			uncheckLines[0].image.src = "grayvlinetakenr.png";
 		}
 		else
 		{
-			againMachine = false;			
-		}		
-	}
-	if(againMachine == true)
-	{
-		setTimeout("machineTurn()", 500);		
+			uncheckLines[0].image.src = "grayhlinetakenr.png";
+		}
+		document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+		canvas.addEventListener("click",executeMouseClick,false);			
 		return;
 	}
-	else
-	{
-	//first check line with threeunchecklineBox
-	//else check line with fourunchecklineBox
-	//else check line with 2 checklineBox -- be smart atleast here.
-	//var bWith3Unchecked = 0;
-	//var bWith4Unchecked = 0;
-	//var bWith2Unchecked = 0;
-		for(indx in boxes){
-			
-			var uncheckLines = getUncheckLinesInBox(boxes[indx]);
-			if(uncheckLines.length==3)
-			{
-				uncheckLines[0].image.onload = function() {
-					ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
-				}
-				uncheckLines[0].state = "CHECKED";
-				if(uncheckLines[0].orient == "V")
-				{
-					uncheckLines[0].image.src = "grayvlinetakenr.png";
-				}
-				else
-				{
-					uncheckLines[0].image.src = "grayhlinetakenr.png";
-				}
-				
-				document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
-				canvas.addEventListener("click",executeMouseClick,false);			
-				return;
-			}			
-			
+	else if(boxWith2Unchecked.length > 0){ //improve
+		var uncheckLines = getUncheckLinesInBox(boxWith2Unchecked[0]);
+		uncheckLines[0].image.onload = function() {
+			ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
 		}
-		for(indx in boxes){
-			var uncheckLines = getUncheckLinesInBox(boxes[indx]);
-			if(uncheckLines.length==4){
-				uncheckLines[0].image.onload = function() {
-					ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
-				}
-				uncheckLines[0].state = "CHECKED";
-				if(uncheckLines[0].orient == "V")
-				{
-					uncheckLines[0].image.src = "grayvlinetakenr.png";
-				}
-				else
-				{
-					uncheckLines[0].image.src = "grayhlinetakenr.png";
-				}
-				document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
-				canvas.addEventListener("click",executeMouseClick,false);			
-				return;	
-			}			
-		}	
-		for(indx in boxes){
-			var uncheckLines = getUncheckLinesInBox(boxes[indx]);
-			if(uncheckLines.length==2){
-				uncheckLines[0].image.onload = function() {
-					ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
-				}
-				uncheckLines[0].state = "CHECKED";
-				if(uncheckLines[0].orient == "V")
-				{
-					uncheckLines[0].image.src = "grayvlinetakenr.png";
-				}
-				else
-				{
-					uncheckLines[0].image.src = "grayhlinetakenr.png";
-				}
-				document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
-				canvas.addEventListener("click",executeMouseClick,false);			
-				return;	
-			}			
-		}		
-	}
+		uncheckLines[0].state = "CHECKED";
+		if(uncheckLines[0].orient == "V")
+		{
+			uncheckLines[0].image.src = "grayvlinetakenr.png";
+		}
+		else
+		{
+			uncheckLines[0].image.src = "grayhlinetakenr.png";
+		}
+		document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
+		canvas.addEventListener("click",executeMouseClick,false);			
+		return;
+	}	
 }
+
+function isSafeToCheck(uline){
+	associatedboxes = getAssociatedBoxes(uline);
+	for(asidx in associatedboxes){
+		if(getUncheckLinesInBox(associatedboxes[asidx]).length==2)
+			return false;
+	}
+	return true;
+}
+
 
 function getClickedLine(x,y){
 
