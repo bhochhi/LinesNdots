@@ -2,8 +2,8 @@
 var canvas = null;
 var ctx = null;
 var boxes = null;
-var hr = 5;
-var vt = 5;
+var hr = 3;
+var vt = 3;
 var horizontalLines;
 var verticalLines;
 var startX = 100;
@@ -12,6 +12,8 @@ var boxWidth = 100;
 var turn = "HUMAN";
 var humanScore = 0;
 var machineScore = 0;
+var lowestCost = 999;
+var lineToCheck = null;
 
 window.addEventListener("load",function() {
 	canvas = document.getElementById("game-stage");
@@ -301,7 +303,7 @@ function machineTurn(){
 			return;						
 		}
 	}
-	else if(boxWith4Unchecked.length > 0){
+	if(boxWith4Unchecked.length > 0){
 		var uncheckLines = getUncheckLinesInBox(boxWith4Unchecked[0]);
 		uncheckLines[0].image.onload = function() {
 			ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
@@ -320,23 +322,92 @@ function machineTurn(){
 		return;
 	}
 	else if(boxWith2Unchecked.length > 0){ //improve
-		var uncheckLines = getUncheckLinesInBox(boxWith2Unchecked[0]);
-		uncheckLines[0].image.onload = function() {
-			ctx.drawImage(uncheckLines[0].image,uncheckLines[0].xPos,uncheckLines[0].yPos);
+	
+		//checked that is less costly.
+		
+		for(boxIndex in boxWith2Unchecked)
+		{			
+			var uncheckLines = getUncheckLinesInBox(boxWith2Unchecked[boxIndex]);
+			var singleCost = 0;
+			for(unlin in uncheckLines){
+				chain = 0;
+				var cost = findCost(uncheckLines[unlin],boxWith2Unchecked[boxIndex]);
+				singleCost +=cost;
+			}
+			if(singleCost<lowestCost){
+				lowestCost = singleCost;
+				lineToCheck = uncheckLines[0];
+			}
+			if(lowestCost<3){
+				break;
+			}
 		}
-		uncheckLines[0].state = "CHECKED";
-		if(uncheckLines[0].orient == "V")
+		//check the line
+		lineToCheck.image.onload = function() {
+			ctx.drawImage(lineToCheck.image,lineToCheck.xPos,lineToCheck.yPos);
+		}
+		lineToCheck.state = "CHECKED";
+		if(lineToCheck.orient == "V")
 		{
-			uncheckLines[0].image.src = "grayvlinetakenr.png";
+			lineToCheck.image.src = "grayvlinetakenr.png";
 		}
 		else
 		{
-			uncheckLines[0].image.src = "grayhlinetakenr.png";
+			lineToCheck.image.src = "grayhlinetakenr.png";
 		}
 		document.getElementById("turn").innerHTML = "Turn: "+document.getElementById("player1").value;
 		canvas.addEventListener("click",executeMouseClick,false);			
 		return;
 	}	
+}
+var chain =0;
+var previousBox=null;
+var startingBox = null;
+var preCommonBoxes=null;
+
+function getNeighboringBox(mLine,box){
+	for(i=0;i<boxes.length;i++){
+		if(boxes[i]==box)
+			continue;
+		if(mLine.orient=="V")
+		{
+			if(boxes[i].leftLine.name == mLine.name)
+			{
+				return boxes[i]
+			}
+			else if(boxes[i].rightLine.name == mLine.name)
+			{
+				return boxes[i]
+			}			
+		}
+		else
+		{
+			if(boxes[i].topLine.name == mLine.name)
+			{
+				return boxes[i]
+			}
+			else if(boxes[i].bottomLine.name == mLine.name)
+			{
+				return boxes[i]
+			}
+		}		
+	}
+	return null;
+}
+
+function findCost(cline,cbox)
+{
+	
+	chain++;
+	var unchckLin = getUncheckLinesInBox(cbox);
+	if(unchckLin.length == 2){
+		var selectedLine = unchckLin[0]==cline?unchckLin[1]:unchckLin[0];
+		var neighborBox = getNeighboringBox(selectedLine,cbox);
+		if(neighborBox != null){
+			return findCost(selectedLine,neighborBox);		
+		}		
+	}	
+	return chain;
 }
 
 function isSafeToCheck(uline){
